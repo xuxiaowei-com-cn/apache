@@ -5,6 +5,12 @@ on:
     paths:
       - .github/workflows/incubator-seata.yml
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Seata version to verify'
+        required: true
+        default: '2.7.0'
+        type: string
 
 jobs:
   check:
@@ -13,7 +19,7 @@ jobs:
     env:
       BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
       KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
-      VERSION: 2.7.0
+      VERSION: ${{ github.event.inputs.version || '2.7.0' }}
     steps:
       - name: Download release artifacts
         run: |
