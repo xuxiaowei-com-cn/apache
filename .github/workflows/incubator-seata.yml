@@ -27,4 +27,4 @@ jobs:
       - name: Verify SHA-512 checksums
         run: |
           shasum -a 512 -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-          shasum -a 512 -c apache-seata-${{ env.VERSION }}-incubating-bin.zip.sha512
+          shasum -a 512 -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
