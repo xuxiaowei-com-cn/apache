@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
+      KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
       VERSION: 2.7.0
     steps:
       - name: Download release artifacts
@@ -28,3 +29,11 @@ jobs:
         run: |
           sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
           sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
