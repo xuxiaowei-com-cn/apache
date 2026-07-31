@@ -51,7 +51,27 @@ jobs:
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
 
-  check-license:
+  check-tag-compile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 8, 17, 21, 25 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: apache/incubator-seata
+          ref: ${{ env.VERSION }}
+      - name: "Setup Java JDK"
+        uses: actions/setup-java@v3.12.0
+        with:
+          distribution: 'zulu'
+          java-version: ${{ matrix.java }}
+      - name: Compile with Maven
+        run: ./mvnw clean package -DskipTests=true
+
+  check-tag-license:
     runs-on: ubuntu-latest
     steps:
       # step 1 clear cache
@@ -65,7 +85,8 @@ jobs:
           repository: apache/incubator-seata
           ref: ${{ env.VERSION }}
       # step 3 https://github.blog/changelog/2022-09-22-github-actions-all-actions-will-begin-running-on-node16-instead-of-node12/
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       # step 4 check license
