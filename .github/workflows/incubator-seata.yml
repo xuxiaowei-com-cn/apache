@@ -19,7 +19,7 @@ env:
 
 jobs:
   check-file:
-    name: check
+    name: check-file
     runs-on: ubuntu-latest
     steps:
       - name: Download release artifacts
