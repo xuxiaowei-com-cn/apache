@@ -12,14 +12,15 @@ on:
         default: '2.7.0'
         type: string
 
+env:
+  BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
+  KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
+  VERSION: ${{ github.event.inputs.version || '2.7.0' }}
+
 jobs:
   check:
     name: check
     runs-on: ubuntu-latest
-    env:
-      BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
-      KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
-      VERSION: ${{ github.event.inputs.version || '2.7.0' }}
     steps:
       - name: Download release artifacts
         run: |
@@ -49,3 +50,28 @@ jobs:
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
+
+  check-license:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: Extract source archive
+        run: tar -zxf apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: List extracted files
+        run: ls -lha
