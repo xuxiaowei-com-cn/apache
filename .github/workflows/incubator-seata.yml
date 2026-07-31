@@ -18,7 +18,7 @@ env:
   VERSION: ${{ github.event.inputs.version || '2.7.0' }}
 
 jobs:
-  check:
+  check-file:
     name: check
     runs-on: ubuntu-latest
     steps:
@@ -85,6 +85,51 @@ jobs:
       - name: Compile with Maven
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
         run: ./mvnw -V -B clean package -DskipTests=true
+
+  check-zip-license:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: Extract source zip
+        run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: List extracted source files
+        run: ls -lha apache-seata-${{ env.VERSION }}-incubating-src
+      - name: Clear cache directory first before trying to restore from cache
+        run: sudo rm -rf $(go env GOMODCACHE) && sudo rm -rf $(go env GOCACHE)
+        shell: bash
+      # https://github.blog/changelog/2022-09-22-github-actions-all-actions-will-begin-running-on-node16-instead-of-node12/
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
+      - name: Check License Header
+        uses: apache/skywalking-eyes/header@8fc52baabc14c86294d96034bcc194cfa7f76b05
+        with:
+          log: info
+          config: apache-seata-${{ env.VERSION }}-incubating-src/.licenserc.yaml
+          mode: check
+      - name: Check Dependencies' License
+        uses: apache/skywalking-eyes/dependency@8fc52baabc14c86294d96034bcc194cfa7f76b05
+        with:
+          log: info
+          config: apache-seata-${{ env.VERSION }}-incubating-src/.licenserc.yaml
+          mode: check
 
   check-tag-compile:
     runs-on: ubuntu-latest
