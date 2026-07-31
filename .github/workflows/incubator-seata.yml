@@ -50,6 +50,10 @@ jobs:
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
+      - name: Display seata-server NOTICE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE
+      - name: Display seata-namingserver NOTICE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE
 
   check-zip-compile:
     runs-on: ubuntu-latest
