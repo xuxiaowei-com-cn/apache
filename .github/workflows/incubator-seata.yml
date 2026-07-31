@@ -88,28 +88,37 @@ jobs:
 
   check-zip-license:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
     steps:
       - name: Download release artifacts
+        working-directory: .
         run: |
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
       - name: List downloaded files
+        working-directory: .
         run: ls -lha
       - name: Verify SHA-512 checksums
+        working-directory: .
         run: |
           sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
       - name: Import GPG KEYS
+        working-directory: .
         run: |
           curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
       - name: Verify GPG signatures
+        working-directory: .
         run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source zip
+        working-directory: .
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: List extracted source files
-        run: ls -lha apache-seata-${{ env.VERSION }}-incubating-src
+        run: ls -lha
       - name: Clear cache directory first before trying to restore from cache
         run: sudo rm -rf $(go env GOMODCACHE) && sudo rm -rf $(go env GOCACHE)
         shell: bash
@@ -122,13 +131,13 @@ jobs:
         uses: apache/skywalking-eyes/header@8fc52baabc14c86294d96034bcc194cfa7f76b05
         with:
           log: info
-          config: apache-seata-${{ env.VERSION }}-incubating-src/.licenserc.yaml
+          config: .licenserc.yaml
           mode: check
       - name: Check Dependencies' License
         uses: apache/skywalking-eyes/dependency@8fc52baabc14c86294d96034bcc194cfa7f76b05
         with:
           log: info
-          config: apache-seata-${{ env.VERSION }}-incubating-src/.licenserc.yaml
+          config: .licenserc.yaml
           mode: check
 
   check-tag-compile:
