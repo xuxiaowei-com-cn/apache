@@ -111,13 +111,7 @@ jobs:
       - name: List extracted source files
         run: ls -lha
       - name: Move extracted source files to current directory
-        run: mv apache-seata-${{ env.VERSION }}-incubating-src/* .
-      - name: Remove non-compliant license files
-        run: |
-          rm -rf distribution/licenses
-          rm -rf saga/seata-saga-statemachine-designer/.babelrc
-          rm -rf sqlparser/seata-sqlparser-antlr/src/main/java/org/apache/seata/sqlparser/antlr/mysql/antlr
-          rm -rf sqlparser/seata-sqlparser-antlr/src/main/java/org/apache/seata/sqlparser/antlr/mysql/parser
+        run: shopt -s dotglob && mv apache-seata-${{ env.VERSION }}-incubating-src/* . && shopt -u dotglob
       - name: Clear cache directory first before trying to restore from cache
         run: sudo rm -rf $(go env GOMODCACHE) && sudo rm -rf $(go env GOCACHE)
         shell: bash
