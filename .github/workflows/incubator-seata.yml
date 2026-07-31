@@ -54,6 +54,46 @@ jobs:
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE
       - name: Display seata-namingserver NOTICE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE
+      - name: Check seata-server NOTICE first line
+        run: |
+          FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE)
+          EXPECTED="Apache Seata (Incubating)"
+          if [ "$FIRST_LINE" != "$EXPECTED" ]; then
+            echo "ERROR: Expected first line of seata-server/NOTICE to be '$EXPECTED', but got '$FIRST_LINE'"
+            exit 1
+          fi
+          echo "OK: seata-server/NOTICE first line is '$FIRST_LINE'"
+      - name: Check seata-server NOTICE second line
+        run: |
+          SECOND_LINE=$(head -n 2 apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE | tail -n 1)
+          CURRENT_YEAR=$(date +%Y)
+          echo "CURRENT_YEAR=$CURRENT_YEAR"
+          EXPECTED="Copyright 2023-${CURRENT_YEAR} The Apache Software Foundation"
+          if [ "$SECOND_LINE" != "$EXPECTED" ]; then
+            echo "ERROR: Expected second line of seata-server/NOTICE to be '$EXPECTED', but got '$SECOND_LINE'"
+            exit 1
+          fi
+          echo "OK: seata-server/NOTICE second line is '$SECOND_LINE'"
+      - name: Check seata-namingserver NOTICE first line
+        run: |
+          FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE)
+          EXPECTED="Apache Seata (Incubating)"
+          if [ "$FIRST_LINE" != "$EXPECTED" ]; then
+            echo "ERROR: Expected first line of seata-namingserver/NOTICE to be '$EXPECTED', but got '$FIRST_LINE'"
+            exit 1
+          fi
+          echo "OK: seata-namingserver/NOTICE first line is '$FIRST_LINE'"
+      - name: Check seata-namingserver NOTICE second line
+        run: |
+          SECOND_LINE=$(head -n 2 apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE | tail -n 1)
+          CURRENT_YEAR=$(date +%Y)
+          echo "CURRENT_YEAR=$CURRENT_YEAR"
+          EXPECTED="Copyright 2023-${CURRENT_YEAR} The Apache Software Foundation"
+          if [ "$SECOND_LINE" != "$EXPECTED" ]; then
+            echo "ERROR: Expected second line of seata-namingserver/NOTICE to be '$EXPECTED', but got '$SECOND_LINE'"
+            exit 1
+          fi
+          echo "OK: seata-namingserver/NOTICE second line is '$SECOND_LINE'"
 
   check-zip-compile:
     runs-on: ubuntu-latest
