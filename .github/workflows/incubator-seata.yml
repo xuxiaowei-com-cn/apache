@@ -51,6 +51,41 @@ jobs:
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
 
+  check-zip-compile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 8, 17, 21, 25 ]
+    steps:
+      - name: Download release artifacts
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: Extract source zip
+        run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: "Setup Java JDK"
+        uses: actions/setup-java@v3.12.0
+        with:
+          distribution: 'zulu'
+          java-version: ${{ matrix.java }}
+      - name: Compile with Maven
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        run: ./mvnw -V -B clean package -DskipTests=true
+
   check-tag-compile:
     runs-on: ubuntu-latest
     strategy:
@@ -69,7 +104,7 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
       - name: Compile with Maven
-        run: ./mvnw clean package -DskipTests=true
+        run: ./mvnw -V -B clean package -DskipTests=true
 
   check-tag-license:
     runs-on: ubuntu-latest
