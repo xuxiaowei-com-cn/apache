@@ -44,5 +44,8 @@ jobs:
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract binary tarball
-        run: |
-          tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Display seata-server LICENSE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
+      - name: Display seata-namingserver LICENSE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
