@@ -112,6 +112,12 @@ jobs:
         run: ls -lha
       - name: Move extracted source files to current directory
         run: shopt -s dotglob && mv apache-seata-${{ env.VERSION }}-incubating-src/* . && shopt -u dotglob
+      - name: Remove non-compliant license files
+        run: |
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+          rm -rf KEYS
       - name: Clear cache directory first before trying to restore from cache
         run: sudo rm -rf $(go env GOMODCACHE) && sudo rm -rf $(go env GOCACHE)
         shell: bash
