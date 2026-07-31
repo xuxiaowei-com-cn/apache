@@ -18,8 +18,11 @@ env:
   VERSION: ${{ github.event.inputs.version || '2.7.0' }}
 
 jobs:
-  check-license-server:
-    name: check-license-server
+  # ============================================================
+  # Step 1: Download all release artifacts, upload as artifact
+  # ============================================================
+  download:
+    name: download
     runs-on: ubuntu-latest
     steps:
       - name: Download release artifacts (binary)
@@ -27,17 +30,45 @@ jobs:
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Download release artifacts (source)
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Download KEYS
+        run: curl -LO ${{ env.KEYS_URL }}
       - name: List downloaded files
         run: ls -lha
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+            apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
+            apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+            apache-seata-${{ env.VERSION }}-incubating-src.zip
+            apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
+            apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+            KEYS
+
+  # ============================================================
+  # Step 2: All checks run in parallel after download
+  # ============================================================
+  check-license-server:
+    name: check-license-server
+    runs-on: ubuntu-latest
+    needs: download
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
@@ -47,23 +78,17 @@ jobs:
   check-license-namingserver:
     name: check-license-namingserver
     runs-on: ubuntu-latest
+    needs: download
     steps:
-      - name: Download release artifacts (binary)
-        run: |
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: List downloaded files
-        run: ls -lha
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
@@ -73,23 +98,17 @@ jobs:
   check-notice-server:
     name: check-notice-server
     runs-on: ubuntu-latest
+    needs: download
     steps:
-      - name: Download release artifacts (binary)
-        run: |
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: List downloaded files
-        run: ls -lha
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
@@ -119,23 +138,17 @@ jobs:
   check-notice-namingserver:
     name: check-notice-namingserver
     runs-on: ubuntu-latest
+    needs: download
     steps:
-      - name: Download release artifacts (binary)
-        run: |
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: List downloaded files
-        run: ls -lha
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
@@ -163,28 +176,23 @@ jobs:
           echo "OK: seata-namingserver/NOTICE second line is '$SECOND_LINE'"
 
   check-zip-compile:
+    name: check-zip-compile
     runs-on: ubuntu-latest
+    needs: download
     strategy:
       fail-fast: false
       matrix:
         java: [ 8, 17, 21, 25 ]
     steps:
-      - name: Download release artifacts
-        run: |
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: List downloaded files
-        run: ls -lha
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source zip
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
@@ -198,24 +206,19 @@ jobs:
         run: ./mvnw -V -B clean package -DskipTests=true
 
   check-zip-license:
+    name: check-zip-license
     runs-on: ubuntu-latest
+    needs: download
     steps:
-      - name: Download release artifacts
-        run: |
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: List downloaded files
-        run: ls -lha
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Verify SHA-512 checksums
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+      - name: Import GPG KEYS and verify signatures
         run: |
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: Import GPG KEYS
-        run: |
-          curl -LO ${{ env.KEYS_URL }}
           gpg --import KEYS
-      - name: Verify GPG signatures
-        run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source zip
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
@@ -251,6 +254,7 @@ jobs:
           mode: check
 
   check-tag-compile:
+    name: check-tag-compile
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -271,6 +275,7 @@ jobs:
         run: ./mvnw -V -B clean package -DskipTests=true
 
   check-tag-license:
+    name: check-tag-license
     runs-on: ubuntu-latest
     steps:
       # step 1 clear cache
