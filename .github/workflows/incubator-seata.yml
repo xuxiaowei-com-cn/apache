@@ -72,6 +72,6 @@ jobs:
         run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source archive
-        run: tar -zxf apache-seata-${{ env.VERSION }}-incubating-src.zip
+        run: unzip -q apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: List extracted files
         run: ls -lha
