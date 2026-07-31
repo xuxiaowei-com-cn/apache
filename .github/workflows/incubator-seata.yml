@@ -83,7 +83,6 @@ jobs:
           node-version: '14.x'
       - name: Check License Header
         uses: apache/skywalking-eyes/header@8fc52baabc14c86294d96034bcc194cfa7f76b05
-        working-directory: apache-seata-2.7.0-incubating-src
         with:
           log: info
           config: .licenserc.yaml
