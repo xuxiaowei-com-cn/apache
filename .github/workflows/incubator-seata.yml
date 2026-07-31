@@ -90,7 +90,6 @@ jobs:
           mode: check
       - name: Check Dependencies' License
         uses: apache/skywalking-eyes/dependency@8fc52baabc14c86294d96034bcc194cfa7f76b05
-        working-directory: apache-seata-2.7.0-incubating-src
         with:
           log: info
           config: .licenserc.yaml
