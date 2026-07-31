@@ -18,24 +18,20 @@ env:
   VERSION: ${{ github.event.inputs.version || '2.7.0' }}
 
 jobs:
-  check-file:
-    name: check-file
+  check-license-server:
+    name: check-license-server
     runs-on: ubuntu-latest
     steps:
-      - name: Download release artifacts
+      - name: Download release artifacts (binary)
         run: |
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
           curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
-          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
       - name: List downloaded files
         run: ls -lha
       - name: Verify SHA-512 checksums
         run: |
           sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
       - name: Import GPG KEYS
         run: |
           curl -LO ${{ env.KEYS_URL }}
@@ -43,17 +39,62 @@ jobs:
       - name: Verify GPG signatures
         run: |
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-server LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
+
+  check-license-namingserver:
+    name: check-license-namingserver
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts (binary)
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Extract binary tarball
+        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
+
+  check-notice-server:
+    name: check-notice-server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts (binary)
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Extract binary tarball
+        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-server NOTICE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE
-      - name: Display seata-namingserver NOTICE
-        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE
       - name: Check seata-server NOTICE first line
         run: |
           FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE)
@@ -74,6 +115,32 @@ jobs:
             exit 1
           fi
           echo "OK: seata-server/NOTICE second line is '$SECOND_LINE'"
+
+  check-notice-namingserver:
+    name: check-notice-namingserver
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts (binary)
+        run: |
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
+          curl -LO ${{ env.BASE_URL }}/${{ env.VERSION }}/apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: List downloaded files
+        run: ls -lha
+      - name: Verify SHA-512 checksums
+        run: |
+          sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Import GPG KEYS
+        run: |
+          curl -LO ${{ env.KEYS_URL }}
+          gpg --import KEYS
+      - name: Verify GPG signatures
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Extract binary tarball
+        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Display seata-namingserver NOTICE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE
       - name: Check seata-namingserver NOTICE first line
         run: |
           FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE)
