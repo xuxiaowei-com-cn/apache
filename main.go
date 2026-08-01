@@ -102,13 +102,20 @@ func isExcluded(groupId string, excludeGroups []string) bool {
 	return slices.Contains(excludeGroups, groupId)
 }
 
-// pomLicenses holds the licenses section of a Maven POM for XML parsing.
-type pomLicenses struct {
+// Pom holds the licenses section of a Maven POM for XML parsing.
+type Pom struct {
 	XMLName  xml.Name     `xml:"project"`
-	Licenses []pomLicense `xml:"licenses>license"`
+	Parent   *PomParent   `xml:"parent"`
+	Licenses []PomLicense `xml:"licenses>license"`
 }
 
-type pomLicense struct {
+type PomParent struct {
+	GroupId    string `xml:"groupId"`
+	ArtifactId string `xml:"artifactId"`
+	Version    string `xml:"version"`
+}
+
+type PomLicense struct {
 	Name         string `xml:"name"`
 	Url          string `xml:"url"`
 	Distribution string `xml:"distribution"`
@@ -127,6 +134,7 @@ type License struct {
 // in the form "groupId:artifactId:type[:classifier]:version[:scope]".
 type MavenCoordinate struct {
 	Text       string // original raw coordinate string (e.g. "org.springframework.boot:spring-boot-starter-security:jar:3.5.2:compile")
+	Parent     *PomParent
 	GroupId    string
 	ArtifactId string
 	Type       string
@@ -220,7 +228,7 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 	// Read licenses from POM file in local repository
 	pomPath := filepath.Join(localRepo, result.PomPath())
 	if data, err := os.ReadFile(pomPath); err == nil {
-		var pom pomLicenses
+		var pom Pom
 		if xml.Unmarshal(data, &pom) == nil {
 			for _, l := range pom.Licenses {
 				result.Licenses = append(result.Licenses, License{
@@ -229,6 +237,26 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 					Distribution: l.Distribution,
 					Comments:     l.Comments,
 				})
+			}
+
+			if pom.Parent != nil {
+				result.Parent = &PomParent{
+					GroupId:    pom.Parent.GroupId,
+					ArtifactId: pom.Parent.ArtifactId,
+					Version:    pom.Parent.Version,
+				}
+			}
+
+			if result.Licenses == nil {
+				if strings.Contains(string(data), "https://www.apache.org/licenses/LICENSE-2.0") ||
+					strings.Contains(string(data), "http://www.apache.org/licenses/LICENSE-2.0") {
+					result.Licenses = append(result.Licenses, License{
+						Name:         "Apache-2.0",
+						Url:          "https://www.apache.org/licenses/LICENSE-2.0.txt",
+						Distribution: "",
+						Comments:     "",
+					})
+				}
 			}
 		}
 	}
