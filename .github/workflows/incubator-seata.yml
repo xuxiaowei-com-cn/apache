@@ -87,9 +87,13 @@ jobs:
       - name: Verify source SHA-512 checksum
         run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
 
-  check-license-server:
+  check-license:
     runs-on: ubuntu-latest
     needs: download
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ server, namingserver ]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -97,12 +101,16 @@ jobs:
           name: release-artifacts
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-      - name: Display seata-server LICENSE
-        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
+      - name: Display seata-${{ matrix.module }} LICENSE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-${{ matrix.module }}/LICENSE
 
-  check-license-namingserver:
+  check-notice:
     runs-on: ubuntu-latest
     needs: download
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ server, namingserver ]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -110,74 +118,28 @@ jobs:
           name: release-artifacts
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-      - name: Display seata-namingserver LICENSE
-        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
-
-  check-notice-server:
-    runs-on: ubuntu-latest
-    needs: download
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts
-      - name: Extract binary tarball
-        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-      - name: Display seata-server NOTICE
-        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE
-      - name: Check seata-server NOTICE first line
+      - name: Display seata-${{ matrix.module }} NOTICE
+        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-${{ matrix.module }}/NOTICE
+      - name: Check seata-${{ matrix.module }} NOTICE first line
         run: |
-          FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE)
+          FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-${{ matrix.module }}/NOTICE)
           EXPECTED="Apache Seata (Incubating)"
           if [ "$FIRST_LINE" != "$EXPECTED" ]; then
-            echo "ERROR: Expected first line of seata-server/NOTICE to be '$EXPECTED', but got '$FIRST_LINE'"
+            echo "ERROR: Expected first line of seata-${{ matrix.module }}/NOTICE to be '$EXPECTED', but got '$FIRST_LINE'"
             exit 1
           fi
-          echo "OK: seata-server/NOTICE first line is '$FIRST_LINE'"
-      - name: Check seata-server NOTICE second line
+          echo "OK: seata-${{ matrix.module }}/NOTICE first line is '$FIRST_LINE'"
+      - name: Check seata-${{ matrix.module }} NOTICE second line
         run: |
-          SECOND_LINE=$(head -n 2 apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/NOTICE | tail -n 1)
+          SECOND_LINE=$(head -n 2 apache-seata-${{ env.VERSION }}-incubating-bin/seata-${{ matrix.module }}/NOTICE | tail -n 1)
           CURRENT_YEAR=$(date +%Y)
           echo "CURRENT_YEAR=$CURRENT_YEAR"
           EXPECTED="Copyright 2023-${CURRENT_YEAR} The Apache Software Foundation"
           if [ "$SECOND_LINE" != "$EXPECTED" ]; then
-            echo "ERROR: Expected second line of seata-server/NOTICE to be '$EXPECTED', but got '$SECOND_LINE'"
+            echo "ERROR: Expected second line of seata-${{ matrix.module }}/NOTICE to be '$EXPECTED', but got '$SECOND_LINE'"
             exit 1
           fi
-          echo "OK: seata-server/NOTICE second line is '$SECOND_LINE'"
-
-  check-notice-namingserver:
-    runs-on: ubuntu-latest
-    needs: download
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts
-      - name: Extract binary tarball
-        run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
-      - name: Display seata-namingserver NOTICE
-        run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE
-      - name: Check seata-namingserver NOTICE first line
-        run: |
-          FIRST_LINE=$(head -n 1 apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE)
-          EXPECTED="Apache Seata (Incubating)"
-          if [ "$FIRST_LINE" != "$EXPECTED" ]; then
-            echo "ERROR: Expected first line of seata-namingserver/NOTICE to be '$EXPECTED', but got '$FIRST_LINE'"
-            exit 1
-          fi
-          echo "OK: seata-namingserver/NOTICE first line is '$FIRST_LINE'"
-      - name: Check seata-namingserver NOTICE second line
-        run: |
-          SECOND_LINE=$(head -n 2 apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/NOTICE | tail -n 1)
-          CURRENT_YEAR=$(date +%Y)
-          echo "CURRENT_YEAR=$CURRENT_YEAR"
-          EXPECTED="Copyright 2023-${CURRENT_YEAR} The Apache Software Foundation"
-          if [ "$SECOND_LINE" != "$EXPECTED" ]; then
-            echo "ERROR: Expected second line of seata-namingserver/NOTICE to be '$EXPECTED', but got '$SECOND_LINE'"
-            exit 1
-          fi
-          echo "OK: seata-namingserver/NOTICE second line is '$SECOND_LINE'"
+          echo "OK: seata-${{ matrix.module }}/NOTICE second line is '$SECOND_LINE'"
 
   check-zip-compile-license:
     runs-on: ubuntu-latest
