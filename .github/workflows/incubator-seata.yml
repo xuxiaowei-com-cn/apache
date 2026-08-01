@@ -202,6 +202,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
+          cache: maven
       - name: Compile with Maven
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
         run: ./mvnw -V -B clean install -DskipTests=true
@@ -247,7 +248,7 @@ jobs:
         if: matrix.java == 25
         run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/namingserver-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
       - name: "Collect license check results"
-        if: always()
+        if: always() && matrix.java == 25
         run: |
           FAIL=0
           if [ "${{ steps.check-full.outcome }}" != "success" ]; then
@@ -263,6 +264,9 @@ jobs:
             FAIL=1
           fi
           exit $FAIL
+      - name: "Clean up Seata artifacts from local Maven cache"
+        if: always()
+        run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-zip-license:
     name: check-zip-license
@@ -333,8 +337,12 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
+          cache: maven
       - name: Compile with Maven
         run: ./mvnw -V -B clean package -DskipTests=true
+      - name: "Clean up Seata artifacts from local Maven cache"
+        if: always()
+        run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-tag-license:
     name: check-tag-license
