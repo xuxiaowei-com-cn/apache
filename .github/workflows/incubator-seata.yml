@@ -325,20 +325,37 @@ jobs:
           config: .licenserc.yaml
           mode: check
 
-  check-tag-sha:
+  check-sha:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [ tag, branch ]
     steps:
+      - name: Compute checkout ref
+        id: ref
+        run: |
+          if [ "${{ matrix.source }}" = "tag" ]; then
+            echo "value=v${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v3
         with:
           repository: apache/incubator-seata
-          ref: v${{ env.VERSION }}
-      - name: Verify tag SHA
+          ref: ${{ steps.ref.outputs.value }}
+      - name: Verify SHA
         run: |
           ACTUAL_SHA=$(git rev-parse HEAD)
-          echo "Tag v${{ env.VERSION }} points to SHA: $ACTUAL_SHA"
+          if [ "${{ matrix.source }}" = "tag" ]; then
+            REF_NAME="Tag v${{ env.VERSION }}"
+          else
+            REF_NAME="Branch ${{ env.VERSION }}"
+          fi
+          echo "$REF_NAME points to SHA: $ACTUAL_SHA"
           if [ "$ACTUAL_SHA" != "${{ env.EXPECTED_TAG_SHA }}" ]; then
-            echo "ERROR: Expected tag v${{ env.VERSION }} SHA to be ${{ env.EXPECTED_TAG_SHA }}, but got $ACTUAL_SHA"
+            echo "ERROR: Expected $REF_NAME SHA to be ${{ env.EXPECTED_TAG_SHA }}, but got $ACTUAL_SHA"
             exit 1
           fi
-          echo "OK: Tag SHA matches expected value"
+          echo "OK: $REF_NAME SHA matches expected value"
