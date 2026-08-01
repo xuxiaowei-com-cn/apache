@@ -19,6 +19,7 @@ func main() {
 	var file string
 	var licenseFile string
 	var excludeGroups []string
+	var checkVersion bool
 
 	cmd := &cli.Command{
 		Name:  "license-check",
@@ -43,6 +44,13 @@ func main() {
 				Aliases:     []string{"e"},
 				Usage:       "exclude dependencies matching this Maven groupId (repeatable)",
 				Destination: &excludeGroups,
+			},
+			&cli.BoolFlag{
+				Name:        "check-version",
+				Aliases:     []string{"v"},
+				Usage:       "include version in license key matching (default: true)",
+				Value:       true,
+				Destination: &checkVersion,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -76,7 +84,10 @@ func main() {
 					continue
 				}
 
-				key := mc.GroupId + ":" + mc.ArtifactId + " " + mc.Version + " "
+				key := mc.GroupId + ":" + mc.ArtifactId + " "
+				if checkVersion {
+					key += mc.Version + " "
+				}
 				if !strings.Contains(licenseContent, key) {
 					unmatched = append(unmatched, dep)
 					fmt.Println("NOT FOUND in", licenseFile+":", dep)
