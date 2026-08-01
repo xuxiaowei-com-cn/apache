@@ -74,10 +74,20 @@ func main() {
 			parseProjectName(string(data))
 
 			var unmatched []string
+			seen := make(map[string]bool)
 			dependencies := parseDependencies(string(data))
 			for _, dep := range dependencies {
 				// Parse full Maven coordinate (for future use)
 				mc := parseCoordinate(dep, localRepo)
+
+				// Deduplicate by GroupId, ArtifactId, and Version — the same
+				// dependency may appear multiple times in the tree (e.g. as a
+				// transitive dependency of different parents).
+				dedupKey := mc.GroupId + ":" + mc.ArtifactId + ":" + mc.Version
+				if seen[dedupKey] {
+					continue
+				}
+				seen[dedupKey] = true
 
 				// Skip excluded groupIds
 				if isExcluded(mc.GroupId, excludeGroups) {
