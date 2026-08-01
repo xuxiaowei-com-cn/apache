@@ -65,30 +65,15 @@ func main() {
 			var unmatched []string
 			dependencies := parseDependencies(string(data))
 			for _, dep := range dependencies {
-				parts := strings.Split(dep, ":")
-				if len(parts) < 4 {
-					unmatched = append(unmatched, dep)
-					fmt.Println("INVALID FORMAT (NOT FOUND in", licenseFile+"):", dep)
-					continue
-				}
-				groupId := parts[0]
-				artifactId := parts[1]
-
-				// Skip excluded groupIds
-				if isExcluded(groupId, excludeGroups) {
-					continue
-				}
-
 				// Parse full Maven coordinate (for future use)
 				mc := parseCoordinate(dep, localRepo)
-				_ = mc
 
-				// version is the last segment that is not a scope
-				version := parts[len(parts)-1]
-				if isScope(version) {
-					version = parts[len(parts)-2]
+				// Skip excluded groupIds
+				if isExcluded(mc.GroupId, excludeGroups) {
+					continue
 				}
-				key := groupId + ":" + artifactId + " " + version
+
+				key := mc.GroupId + ":" + mc.ArtifactId + " " + mc.Version
 				if !strings.Contains(licenseContent, key) {
 					unmatched = append(unmatched, dep)
 					fmt.Println("NOT FOUND in", licenseFile+":", dep)
