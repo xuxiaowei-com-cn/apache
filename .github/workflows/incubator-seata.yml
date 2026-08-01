@@ -16,6 +16,7 @@ env:
   BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
   KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
   VERSION: ${{ github.event.inputs.version || '2.7.0' }}
+  EXPECTED_TAG_SHA: 49fef81747c3f7afd9ec0ae054e5a4aece83e5ac
 
 jobs:
   # ============================================================
@@ -268,7 +269,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: apache/incubator-seata
-          ref: ${{ env.VERSION }}
+          ref: v${{ env.VERSION }}
       - name: "Setup Java JDK"
         uses: actions/setup-java@v3.12.0
         with:
@@ -290,7 +291,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: apache/incubator-seata
-          ref: ${{ env.VERSION }}
+          ref: v${{ env.VERSION }}
       # step 3 https://github.blog/changelog/2022-09-22-github-actions-all-actions-will-begin-running-on-node16-instead-of-node12/
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -310,3 +311,22 @@ jobs:
           log: info
           config: .licenserc.yaml
           mode: check
+
+  check-tag-sha:
+    name: check-tag-sha
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: apache/incubator-seata
+          ref: v${{ env.VERSION }}
+      - name: Verify tag SHA
+        run: |
+          ACTUAL_SHA=$(git rev-parse HEAD)
+          echo "Tag v${{ env.VERSION }} points to SHA: $ACTUAL_SHA"
+          if [ "$ACTUAL_SHA" != "${{ env.EXPECTED_TAG_SHA }}" ]; then
+            echo "ERROR: Expected tag v${{ env.VERSION }} SHA to be ${{ env.EXPECTED_TAG_SHA }}, but got $ACTUAL_SHA"
+            exit 1
+          fi
+          echo "OK: Tag SHA matches expected value"
