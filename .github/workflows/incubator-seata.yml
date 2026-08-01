@@ -231,6 +231,9 @@ jobs:
           rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip
           rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip.asc
           rm -rf apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc
+          rm -rf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
           rm -rf KEYS
       - name: Clear cache directory first before trying to restore from cache
         run: sudo rm -rf $(go env GOMODCACHE) && sudo rm -rf $(go env GOCACHE)
