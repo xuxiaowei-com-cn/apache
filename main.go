@@ -255,9 +255,8 @@ func indexOf(ss []string, s string) int {
 	return -1
 }
 
-// parseProjectName extracts the project coordinate from a dependency tree file.
-// It returns the line after the "dependency:tree" header that is the root project node
-// (i.e., has no "+- " or "\- " prefix and contains a Maven coordinate with ":").
+// parseProjectName prints the Maven plugin output line (e.g. "--- maven-dependency-plugin:3.6.1:tree @ project-name ---")
+// from the dependency tree output, which contains the project name after the "@" symbol.
 func parseProjectName(input string) {
 	scanner := bufio.NewScanner(strings.NewReader(input))
 	for scanner.Scan() {
