@@ -73,7 +73,7 @@ func main() {
 					continue
 				}
 
-				key := mc.GroupId + ":" + mc.ArtifactId + " " + mc.Version
+				key := mc.GroupId + ":" + mc.ArtifactId + " " + mc.Version + " "
 				if !strings.Contains(licenseContent, key) {
 					unmatched = append(unmatched, dep)
 					fmt.Println("NOT FOUND in", licenseFile+":", dep)
