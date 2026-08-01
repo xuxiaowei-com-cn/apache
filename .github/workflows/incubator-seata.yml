@@ -339,7 +339,61 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Compile with Maven
-        run: ./mvnw -V -B clean package -DskipTests=true
+        run: ./mvnw -V -B clean install -DskipTests=true
+      - name: "Show dependency tree"
+        run: ./mvnw -V -B dependency:tree
+      - name: "Export full dependency tree"
+        run: ./mvnw -V -B dependency:tree > tree.txt
+      - name: "Export namingserver dependency tree"
+        if: matrix.java == 25
+        run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
+      - name: "Export server dependency tree"
+        if: matrix.java == 25
+        run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
+      - name: "Set up Go"
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref }}
+          path: apache
+      - name: "Check full dependency licenses"
+        id: check-full
+        continue-on-error: true
+        working-directory: apache
+        run: go run main.go --file=../incubator-seata/tree.txt --license-file=../incubator-seata/distribution/LICENSE --exclude-group=org.apache.seata
+      - name: "Check server dependency licenses"
+        id: check-server
+        continue-on-error: true
+        working-directory: apache
+        if: matrix.java == 25
+        run: go run main.go --file=../incubator-seata/server-tree.txt --license-file=../incubator-seata/distribution/LICENSE-server --exclude-group=org.apache.seata
+      - name: "Check namingserver dependency licenses"
+        id: check-namingserver
+        continue-on-error: true
+        working-directory: apache
+        if: matrix.java == 25
+        run: go run main.go --file=../incubator-seata/namingserver-tree.txt --license-file=../incubator-seata/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
+      - name: "Collect license check results"
+        if: always() && matrix.java == 25
+        run: |
+          FAIL=0
+          if [ "${{ steps.check-full.outcome }}" != "success" ]; then
+            echo "::error::full dependency licenses check failed"
+            FAIL=1
+          fi
+          if [ "${{ steps.check-server.outcome }}" != "success" ]; then
+            echo "::error::server dependency licenses check failed"
+            FAIL=1
+          fi
+          if [ "${{ steps.check-namingserver.outcome }}" != "success" ]; then
+            echo "::error::namingserver dependency licenses check failed"
+            FAIL=1
+          fi
+          exit $FAIL
       - name: "Clean up Seata artifacts from local Maven cache"
         if: always()
         run: rm -rf ~/.m2/repository/org/apache/seata
