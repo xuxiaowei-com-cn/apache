@@ -213,8 +213,10 @@ jobs:
         run: ./mvnw -V -B dependency:tree -am > tree.txt
       - name: "Export namingserver dependency tree"
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        if: matrix.java == 25
         run: ./mvnw -V -B dependency:tree -pl namingserver -am > namingserver-tree.txt
       - name: "Export server dependency tree"
+        if: matrix.java == 25
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
         run: ./mvnw -V -B dependency:tree -pl server -am > server-tree.txt
       - name: "Set up Go"
@@ -231,17 +233,19 @@ jobs:
         id: check-full
         continue-on-error: true
         working-directory: apache
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE --exclude-group=org.apache.seata
       - name: "Check server dependency licenses"
         id: check-server
         continue-on-error: true
         working-directory: apache
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/server-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-server
+        if: matrix.java == 25
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/server-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-server --exclude-group=org.apache.seata
       - name: "Check namingserver dependency licenses"
         id: check-namingserver
         continue-on-error: true
         working-directory: apache
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/namingserver-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-namingserver
+        if: matrix.java == 25
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/namingserver-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
       - name: "Collect license check results"
         if: always()
         run: |
