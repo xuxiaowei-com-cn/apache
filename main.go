@@ -256,13 +256,20 @@ func indexOf(ss []string, s string) int {
 }
 
 // parseProjectName prints the Maven plugin output line (e.g. "--- maven-dependency-plugin:3.6.1:tree @ project-name ---")
-// from the dependency tree output, which contains the project name after the "@" symbol.
+// and the following line (the project coordinate) from the dependency tree output.
 func parseProjectName(input string) {
 	scanner := bufio.NewScanner(strings.NewReader(input))
+	hit := -1
+	lineNum := 0
 	for scanner.Scan() {
+		lineNum++
 		line := scanner.Text()
-		if strings.Contains(line, "dependency:") && strings.Contains(line, ":tree") && strings.Contains(line, " @ ") {
-			log.Println(line)
+		if hit+1 == lineNum {
+			fmt.Printf("%s\n", line)
+			hit = -1
+		} else if strings.Contains(line, "dependency:") && strings.Contains(line, ":tree") && strings.Contains(line, " @ ") {
+			fmt.Printf("%s\n", line)
+			hit = lineNum
 		}
 	}
 }
