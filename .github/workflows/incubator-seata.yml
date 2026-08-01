@@ -19,7 +19,7 @@ env:
   BASE_URL: https://dist.apache.org/repos/dist/dev/incubator/seata
   KEYS_URL: https://downloads.apache.org/incubator/seata/KEYS
   VERSION: ${{ github.event.inputs.version || '2.7.0' }}
-  EXPECTED_TAG_SHA: 49fef81747c3f7afd9ec0ae054e5a4aece83e5ac
+  EXPECTED_TAG_SHA: 54b1b017cd4fff55ebbbdb49020d2ae58f9ca706
 
 jobs:
   # ============================================================
