@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v3"
+	"golang.org/x/net/html/charset"
 )
 
 func main() {
@@ -125,9 +127,12 @@ func isExcluded(groupId string, excludeGroups []string) bool {
 
 // Pom holds the licenses section of a Maven POM for XML parsing.
 type Pom struct {
-	XMLName  xml.Name     `xml:"project"`
-	Parent   *PomParent   `xml:"parent"`
-	Licenses []PomLicense `xml:"licenses>license"`
+	XMLName    xml.Name     `xml:"project"`
+	Parent     *PomParent   `xml:"parent"`
+	GroupId    string       `xml:"groupId"`
+	ArtifactId string       `xml:"artifactId"`
+	Version    string       `xml:"version"`
+	Licenses   []PomLicense `xml:"licenses>license"`
 }
 
 type PomParent struct {
@@ -250,7 +255,10 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 	pomPath := filepath.Join(localRepo, result.PomPath())
 	if data, err := os.ReadFile(pomPath); err == nil {
 		var pom Pom
-		if xml.Unmarshal(data, &pom) == nil {
+		decoder := xml.NewDecoder(bytes.NewReader(data))
+		decoder.CharsetReader = charset.NewReaderLabel
+		pomXml := decoder.Decode(&pom)
+		if pomXml == nil {
 			for _, l := range pom.Licenses {
 				result.Licenses = append(result.Licenses, License{
 					Name:         l.Name,
