@@ -319,19 +319,20 @@ jobs:
           config: .licenserc.yaml
           mode: check
 
-  check-tag-compile:
-    name: check-tag-compile
+  check-checkout-compile:
+    name: check-checkout-compile
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         java: [ 8, 17, 21, 25 ]
+        ref: [ ${{ env.VERSION }}, v${{ env.VERSION }} ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           repository: apache/incubator-seata
-          ref: v${{ env.VERSION }}
+          ref: ${{ matrix.ref }}
       - name: "Setup Java JDK"
         uses: actions/setup-java@v3.12.0
         with:
