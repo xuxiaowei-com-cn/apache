@@ -22,12 +22,12 @@ func main() {
 
 	cmd := &cli.Command{
 		Name:  "license-check",
-		Usage: "parse a dependency tree file (e.g. gradle dependencies / mvn dependency:tree output) and check against a license file",
+		Usage: "parse a dependency tree file (e.g. mvn dependency:tree output) and check against a license file",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "file",
 				Aliases:     []string{"f"},
-				Usage:       "path to the dependency tree output (e.g., gradle dependencies / mvn dependency:tree)",
+				Usage:       "path to the dependency tree output (e.g. mvn dependency:tree)",
 				Value:       "tree.txt",
 				Destination: &file,
 			},
