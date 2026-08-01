@@ -141,20 +141,51 @@ jobs:
           fi
           echo "OK: seata-${{ matrix.module }}/NOTICE second line is '$SECOND_LINE'"
 
-  check-zip-compile-license:
+  # Merged: check-zip-compile-license + check-tag-compile-license + check-branch-compile-license
+  check-compile-license:
     runs-on: ubuntu-latest
     needs: download
     strategy:
       fail-fast: false
       matrix:
         java: [ 8, 17, 21, 25 ]
+        source: [ zip, tag, branch ]
     steps:
+      # --- Obtain seata source (zip: download+extract; tag/branch: git checkout) ---
       - name: Download artifacts
+        if: matrix.source == 'zip'
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
       - name: Extract source zip
+        if: matrix.source == 'zip'
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
+      - name: Compute checkout ref
+        if: matrix.source != 'zip'
+        id: ref
+        run: |
+          if [ "${{ matrix.source }}" = "tag" ]; then
+            echo "value=v${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          fi
+      - name: Checkout seata source
+        if: matrix.source != 'zip'
+        uses: actions/checkout@v3
+        with:
+          repository: apache/incubator-seata
+          ref: ${{ steps.ref.outputs.value }}
+          path: incubator-seata
+      # --- Compute working directory ---
+      - name: Set working directory
+        id: workdir
+        run: |
+          if [ "${{ matrix.source }}" = "zip" ]; then
+            echo "value=apache-seata-${{ env.VERSION }}-incubating-src" >> $GITHUB_OUTPUT
+          else
+            echo "value=incubator-seata" >> $GITHUB_OUTPUT
+          fi
+      # --- Common: compile, dependency tree, license checks ---
       - name: "Setup Java JDK"
         uses: actions/setup-java@v3.12.0
         with:
@@ -162,21 +193,21 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Compile with Maven
-        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B clean install -DskipTests=true
       - name: "Show dependency tree"
-        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B dependency:tree
       - name: "Export full dependency tree"
-        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B dependency:tree > tree.txt
       - name: "Export namingserver dependency tree"
-        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
         if: matrix.java == 25
+        working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
       - name: "Export server dependency tree"
         if: matrix.java == 25
-        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
       - name: "Set up Go"
         uses: actions/setup-go@v5
@@ -192,19 +223,19 @@ jobs:
         id: check-full
         continue-on-error: true
         working-directory: apache
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE --exclude-group=org.apache.seata
+        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE --exclude-group=org.apache.seata
       - name: "Check server dependency licenses"
         id: check-server
         continue-on-error: true
         working-directory: apache
         if: matrix.java == 25
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/server-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-server --exclude-group=org.apache.seata
+        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/server-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-server --exclude-group=org.apache.seata
       - name: "Check namingserver dependency licenses"
         id: check-namingserver
         continue-on-error: true
         working-directory: apache
         if: matrix.java == 25
-        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/namingserver-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
+        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/namingserver-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
       - name: "Collect license check results"
         if: always() && matrix.java == 25
         run: |
@@ -269,99 +300,6 @@ jobs:
           log: info
           config: .licenserc.yaml
           mode: check
-
-  check-compile-license:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ 8, 17, 21, 25 ]
-        ref-type: [ tag, branch ]
-    steps:
-      - name: Compute checkout ref
-        id: ref
-        run: |
-          if [ "${{ matrix.ref-type }}" = "tag" ]; then
-            echo "value=v${{ env.VERSION }}" >> $GITHUB_OUTPUT
-          else
-            echo "value=${{ env.VERSION }}" >> $GITHUB_OUTPUT
-          fi
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: apache/incubator-seata
-          ref: ${{ steps.ref.outputs.value }}
-          path: incubator-seata
-      - name: "Setup Java JDK"
-        uses: actions/setup-java@v3.12.0
-        with:
-          distribution: 'zulu'
-          java-version: ${{ matrix.java }}
-          cache: maven
-      - name: Compile with Maven
-        working-directory: incubator-seata
-        run: ./mvnw -V -B clean install -DskipTests=true
-      - name: "Show dependency tree"
-        working-directory: incubator-seata
-        run: ./mvnw -V -B dependency:tree
-      - name: "Export full dependency tree"
-        working-directory: incubator-seata
-        run: ./mvnw -V -B dependency:tree > tree.txt
-      - name: "Export namingserver dependency tree"
-        if: matrix.java == 25
-        working-directory: incubator-seata
-        run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
-      - name: "Export server dependency tree"
-        if: matrix.java == 25
-        working-directory: incubator-seata
-        run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
-      - name: "Set up Go"
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
-          path: apache
-      - name: "Check full dependency licenses"
-        id: check-full
-        continue-on-error: true
-        working-directory: apache
-        run: go run main.go --file=../incubator-seata/tree.txt --license-file=../incubator-seata/distribution/LICENSE --exclude-group=org.apache.seata
-      - name: "Check server dependency licenses"
-        id: check-server
-        continue-on-error: true
-        working-directory: apache
-        if: matrix.java == 25
-        run: go run main.go --file=../incubator-seata/server-tree.txt --license-file=../incubator-seata/distribution/LICENSE-server --exclude-group=org.apache.seata
-      - name: "Check namingserver dependency licenses"
-        id: check-namingserver
-        continue-on-error: true
-        working-directory: apache
-        if: matrix.java == 25
-        run: go run main.go --file=../incubator-seata/namingserver-tree.txt --license-file=../incubator-seata/distribution/LICENSE-namingserver --exclude-group=org.apache.seata
-      - name: "Collect license check results"
-        if: always() && matrix.java == 25
-        run: |
-          FAIL=0
-          if [ "${{ steps.check-full.outcome }}" != "success" ]; then
-            echo "::error::full dependency licenses check failed"
-            FAIL=1
-          fi
-          if [ "${{ steps.check-server.outcome }}" != "success" ]; then
-            echo "::error::server dependency licenses check failed"
-            FAIL=1
-          fi
-          if [ "${{ steps.check-namingserver.outcome }}" != "success" ]; then
-            echo "::error::namingserver dependency licenses check failed"
-            FAIL=1
-          fi
-          exit $FAIL
-      - name: "Clean up Seata artifacts from local Maven cache"
-        if: always()
-        run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-tag-license:
     runs-on: ubuntu-latest
