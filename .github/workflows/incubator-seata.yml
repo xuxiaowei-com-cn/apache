@@ -340,16 +340,21 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Compile with Maven
+        working-directory: incubator-seata
         run: ./mvnw -V -B clean install -DskipTests=true
       - name: "Show dependency tree"
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree
       - name: "Export full dependency tree"
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree > tree.txt
       - name: "Export namingserver dependency tree"
         if: matrix.java == 25
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
       - name: "Export server dependency tree"
         if: matrix.java == 25
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
       - name: "Set up Go"
         uses: actions/setup-go@v5
@@ -420,16 +425,21 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
       - name: Compile with Maven
+        working-directory: incubator-seata
         run: ./mvnw -V -B clean install -DskipTests=true
       - name: "Show dependency tree"
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree
       - name: "Export full dependency tree"
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree > tree.txt
       - name: "Export namingserver dependency tree"
         if: matrix.java == 25
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
       - name: "Export server dependency tree"
         if: matrix.java == 25
+        working-directory: incubator-seata
         run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
       - name: "Set up Go"
         uses: actions/setup-go@v5
