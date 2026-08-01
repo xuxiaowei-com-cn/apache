@@ -62,6 +62,9 @@ func main() {
 				return fmt.Errorf("get maven local repository: %w", err)
 			}
 
+			// Print project name
+			parseProjectName(string(data))
+
 			var unmatched []string
 			dependencies := parseDependencies(string(data))
 			for _, dep := range dependencies {
@@ -250,6 +253,19 @@ func indexOf(ss []string, s string) int {
 		}
 	}
 	return -1
+}
+
+// parseProjectName extracts the project coordinate from a dependency tree file.
+// It returns the line after the "dependency:tree" header that is the root project node
+// (i.e., has no "+- " or "\- " prefix and contains a Maven coordinate with ":").
+func parseProjectName(input string) {
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "dependency:") && strings.Contains(line, ":tree") && strings.Contains(line, " @ ") {
+			log.Println(line)
+		}
+	}
 }
 
 // parseDependencies extracts dependency names from a tree-format file.
