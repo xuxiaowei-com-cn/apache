@@ -176,8 +176,8 @@ jobs:
           fi
           echo "OK: seata-namingserver/NOTICE second line is '$SECOND_LINE'"
 
-  check-zip-compile:
-    name: check-zip-compile
+  check-zip-compile-license:
+    name: check-zip-compile-license
     runs-on: ubuntu-latest
     needs: download
     strategy:
@@ -204,7 +204,61 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Compile with Maven
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
-        run: ./mvnw -V -B clean package -DskipTests=true
+        run: ./mvnw -V -B clean install -DskipTests=true
+      - name: "Show dependency tree"
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        run: ./mvnw -V -B dependency:tree
+      - name: "Export full dependency tree"
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        run: ./mvnw -V -B dependency:tree -am > tree.txt
+      - name: "Export namingserver dependency tree"
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        run: ./mvnw -V -B dependency:tree -pl namingserver -am > namingserver-tree.txt
+      - name: "Export server dependency tree"
+        working-directory: apache-seata-${{ env.VERSION }}-incubating-src
+        run: ./mvnw -V -B dependency:tree -pl server -am > server-tree.txt
+      - name: "Set up Go"
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref }}
+          path: apache
+      - name: "Check full dependency licenses"
+        id: check-full
+        continue-on-error: true
+        working-directory: apache
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE
+      - name: "Check server dependency licenses"
+        id: check-server
+        continue-on-error: true
+        working-directory: apache
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/server-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-server
+      - name: "Check namingserver dependency licenses"
+        id: check-namingserver
+        continue-on-error: true
+        working-directory: apache
+        run: go run main.go --file=../apache-seata-${{ env.VERSION }}-incubating-src/namingserver-tree.txt --license-file=../apache-seata-${{ env.VERSION }}-incubating-src/distribution/LICENSE-namingserver
+      - name: "Collect license check results"
+        if: always()
+        run: |
+          FAIL=0
+          if [ "${{ steps.check-full.outcome }}" != "success" ]; then
+            echo "::error::full dependency licenses check failed"
+            FAIL=1
+          fi
+          if [ "${{ steps.check-server.outcome }}" != "success" ]; then
+            echo "::error::server dependency licenses check failed"
+            FAIL=1
+          fi
+          if [ "${{ steps.check-namingserver.outcome }}" != "success" ]; then
+            echo "::error::namingserver dependency licenses check failed"
+            FAIL=1
+          fi
+          exit $FAIL
 
   check-zip-license:
     name: check-zip-license
