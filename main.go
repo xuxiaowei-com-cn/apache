@@ -90,7 +90,7 @@ func main() {
 				}
 				if !strings.Contains(licenseContent, key) {
 					unmatched = append(unmatched, dep)
-					fmt.Println("NOT FOUND in", licenseFile+":", dep)
+					fmt.Println("NOT FOUND in", licenseFile+":", dep, mc.Licenses)
 				}
 			}
 
