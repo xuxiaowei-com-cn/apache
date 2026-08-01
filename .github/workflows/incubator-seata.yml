@@ -210,15 +210,15 @@ jobs:
         run: ./mvnw -V -B dependency:tree
       - name: "Export full dependency tree"
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
-        run: ./mvnw -V -B dependency:tree -am > tree.txt
+        run: ./mvnw -V -B dependency:tree > tree.txt
       - name: "Export namingserver dependency tree"
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
         if: matrix.java == 25
-        run: ./mvnw -V -B dependency:tree -pl namingserver -am > namingserver-tree.txt
+        run: ./mvnw -V -B dependency:tree -pl namingserver > namingserver-tree.txt
       - name: "Export server dependency tree"
         if: matrix.java == 25
         working-directory: apache-seata-${{ env.VERSION }}-incubating-src
-        run: ./mvnw -V -B dependency:tree -pl server -am > server-tree.txt
+        run: ./mvnw -V -B dependency:tree -pl server > server-tree.txt
       - name: "Set up Go"
         uses: actions/setup-go@v5
         with:
