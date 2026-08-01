@@ -26,7 +26,6 @@ jobs:
   # Step 1: Download all release artifacts, upload as artifact
   # ============================================================
   download:
-    name: download
     runs-on: ubuntu-latest
     steps:
       - name: Download release artifacts (binary)
@@ -59,8 +58,7 @@ jobs:
   # ============================================================
   # Step 2: All checks run in parallel after download
   # ============================================================
-  check-license-server:
-    name: check-license-server
+  gpg:
     runs-on: ubuntu-latest
     needs: download
     steps:
@@ -68,19 +66,41 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS and verify signatures
+      - name: Import GPG KEYS and verify binary signature
         run: |
           gpg --import KEYS
           gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
+      - name: Verify source signature
+        run: |
+          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
+
+  sha512sum:
+    runs-on: ubuntu-latest
+    needs: download
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+      - name: Verify binary SHA-512 checksum
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
+      - name: Verify source SHA-512 checksum
+        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
+
+  check-license-server:
+    runs-on: ubuntu-latest
+    needs: download
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-server LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-server/LICENSE
 
   check-license-namingserver:
-    name: check-license-namingserver
     runs-on: ubuntu-latest
     needs: download
     steps:
@@ -88,19 +108,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS and verify signatures
-        run: |
-          gpg --import KEYS
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-namingserver LICENSE
         run: cat apache-seata-${{ env.VERSION }}-incubating-bin/seata-namingserver/LICENSE
 
   check-notice-server:
-    name: check-notice-server
     runs-on: ubuntu-latest
     needs: download
     steps:
@@ -108,12 +121,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS and verify signatures
-        run: |
-          gpg --import KEYS
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-server NOTICE
@@ -140,7 +147,6 @@ jobs:
           echo "OK: seata-server/NOTICE second line is '$SECOND_LINE'"
 
   check-notice-namingserver:
-    name: check-notice-namingserver
     runs-on: ubuntu-latest
     needs: download
     steps:
@@ -148,12 +154,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.sha512
-      - name: Import GPG KEYS and verify signatures
-        run: |
-          gpg --import KEYS
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz.asc apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Extract binary tarball
         run: tar -zxvf apache-seata-${{ env.VERSION }}-incubating-bin.tar.gz
       - name: Display seata-namingserver NOTICE
@@ -180,7 +180,6 @@ jobs:
           echo "OK: seata-namingserver/NOTICE second line is '$SECOND_LINE'"
 
   check-zip-compile-license:
-    name: check-zip-compile-license
     runs-on: ubuntu-latest
     needs: download
     strategy:
@@ -192,12 +191,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: Import GPG KEYS and verify signatures
-        run: |
-          gpg --import KEYS
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source zip
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: "Setup Java JDK"
@@ -272,7 +265,6 @@ jobs:
         run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-zip-license:
-    name: check-zip-license
     runs-on: ubuntu-latest
     needs: download
     steps:
@@ -280,12 +272,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
-      - name: Verify SHA-512 checksums
-        run: sha512sum -c apache-seata-${{ env.VERSION }}-incubating-src.zip.sha512
-      - name: Import GPG KEYS and verify signatures
-        run: |
-          gpg --import KEYS
-          gpg --verify apache-seata-${{ env.VERSION }}-incubating-src.zip.asc apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: Extract source zip
         run: unzip apache-seata-${{ env.VERSION }}-incubating-src.zip
       - name: List extracted source files
@@ -323,7 +309,6 @@ jobs:
           mode: check
 
   check-tag-compile-license:
-    name: check-tag-compile-license
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -408,7 +393,6 @@ jobs:
         run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-branch-compile-license:
-    name: check-branch-compile-license
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -493,7 +477,6 @@ jobs:
         run: rm -rf ~/.m2/repository/org/apache/seata
 
   check-tag-license:
-    name: check-tag-license
     runs-on: ubuntu-latest
     steps:
       # step 1 clear cache
@@ -527,7 +510,6 @@ jobs:
           mode: check
 
   check-tag-sha:
-    name: check-tag-sha
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
