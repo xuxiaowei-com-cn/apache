@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -16,10 +17,12 @@ import (
 
 func main() {
 	var file string
+	var licenseFile string
+	var excludeGroups []string
 
 	cmd := &cli.Command{
 		Name:  "dep-tree",
-		Usage: "parse a dependency tree file (e.g. gradle dependencies / mvn dependency:tree output)",
+		Usage: "parse a dependency tree file (e.g. gradle dependencies / mvn dependency:tree output) and check against a license file",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "file",
@@ -28,6 +31,19 @@ func main() {
 				Value:       "tree.txt",
 				Destination: &file,
 			},
+			&cli.StringFlag{
+				Name:        "license-file",
+				Aliases:     []string{"l"},
+				Usage:       "path to the LICENSE-namingserver file",
+				Value:       "LICENSE-namingserver",
+				Destination: &licenseFile,
+			},
+			&cli.StringSliceFlag{
+				Name:        "exclude-group",
+				Aliases:     []string{"e"},
+				Usage:       "exclude dependencies matching this groupId (can be specified multiple times)",
+				Destination: &excludeGroups,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			data, err := os.ReadFile(file)
@@ -35,16 +51,55 @@ func main() {
 				return fmt.Errorf("read %s: %w", file, err)
 			}
 
+			licenseData, err := os.ReadFile(licenseFile)
+			if err != nil {
+				return fmt.Errorf("read %s: %w", licenseFile, err)
+			}
+			licenseContent := string(licenseData)
+
 			localRepo, err := mvnLocalRepo()
 			if err != nil {
 				return fmt.Errorf("get maven local repository: %w", err)
 			}
 
+			var unmatched []string
 			dependencies := parseDependencies(string(data))
 			for _, dep := range dependencies {
+				parts := strings.Split(dep, ":")
+				if len(parts) < 4 {
+					unmatched = append(unmatched, dep)
+					fmt.Println("INVALID FORMAT (NOT FOUND in", licenseFile+"):", dep)
+					continue
+				}
+				groupId := parts[0]
+				artifactId := parts[1]
+
+				// Skip excluded groupIds
+				if isExcluded(groupId, excludeGroups) {
+					continue
+				}
+
+				// Parse full Maven coordinate (for future use)
 				mc := parseCoordinate(dep, localRepo)
-				fmt.Println(mc)
+				_ = mc
+
+				// version is the last segment that is not a scope
+				version := parts[len(parts)-1]
+				if isScope(version) {
+					version = parts[len(parts)-2]
+				}
+				key := groupId + ":" + artifactId + " " + version
+				if !strings.Contains(licenseContent, key) {
+					unmatched = append(unmatched, dep)
+					fmt.Println("NOT FOUND in", licenseFile+":", dep)
+				}
 			}
+
+			if len(unmatched) > 0 {
+				return fmt.Errorf("%d dependencies not found in %s", len(unmatched), licenseFile)
+			}
+
+			fmt.Println("All dependencies found in", licenseFile)
 			return nil
 		},
 	}
@@ -52,6 +107,11 @@ func main() {
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// isExcluded reports whether groupId matches any entry in the exclude list.
+func isExcluded(groupId string, excludeGroups []string) bool {
+	return slices.Contains(excludeGroups, groupId)
 }
 
 // pomLicenses holds the licenses section of a Maven POM for XML parsing.
@@ -78,6 +138,7 @@ type License struct {
 // MavenCoordinate holds the parsed components of a Maven coordinate string
 // in the form "groupId:artifactId:type[:classifier]:version[:scope]".
 type MavenCoordinate struct {
+	Text       string // original raw coordinate string (e.g. "org.springframework.boot:spring-boot-starter-security:jar:3.5.2:compile")
 	GroupId    string
 	ArtifactId string
 	Type       string
@@ -104,7 +165,7 @@ func (m MavenCoordinate) RepoPath() string {
 }
 
 // PomPath returns the relative path of the POM for this coordinate
-// within a Maven local repository (e.g. "com/example/my-lib/1.0.0/my-lib-1.0.0.pom").
+// within a Maven local repository (e.g. "org/springframework/boot/spring-boot-starter-security/3.5.2/spring-boot-starter-security-3.5.2.pom").
 func (m MavenCoordinate) PomPath() string {
 	groupPath := filepath.Join(strings.Split(m.GroupId, ".")...)
 	filename := m.ArtifactId + "-" + m.Version + ".pom"
@@ -142,6 +203,7 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 	}
 
 	result := MavenCoordinate{
+		Text:    coord,
 		Type:    parts[2],
 		Version: version,
 	}
