@@ -46,8 +46,8 @@ func main() {
 }
 
 // parseDependencies extracts dependency names from a tree-format file.
-// It scans each line for "+- " or "\- " prefixes and strips the
-// ":test" / ":compile" / ":runtime" scope suffixes.
+// It scans each line for "+- " or "\- " prefixes and returns the
+// content after them, including any scope suffix (e.g. :test, :compile, :runtime).
 func parseDependencies(input string) []string {
 	var dependencies []string
 
@@ -57,16 +57,10 @@ func parseDependencies(input string) []string {
 
 		// Extract content after "+- "
 		if _, after, ok := strings.Cut(line, "+- "); ok {
-			after = strings.TrimSuffix(after, ":test")
-			after = strings.TrimSuffix(after, ":compile")
-			after = strings.TrimSuffix(after, ":runtime")
 			dependencies = append(dependencies, after)
 		}
 		// Extract content after "\- "
 		if _, after, ok := strings.Cut(line, "\\- "); ok {
-			after = strings.TrimSuffix(after, ":test")
-			after = strings.TrimSuffix(after, ":compile")
-			after = strings.TrimSuffix(after, ":runtime")
 			dependencies = append(dependencies, after)
 		}
 	}
