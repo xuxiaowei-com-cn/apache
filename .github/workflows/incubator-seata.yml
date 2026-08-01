@@ -322,8 +322,8 @@ jobs:
           config: .licenserc.yaml
           mode: check
 
-  check-tag-compile:
-    name: check-tag-compile
+  check-tag-compile-license:
+    name: check-tag-compile-license
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -407,8 +407,8 @@ jobs:
         if: always()
         run: rm -rf ~/.m2/repository/org/apache/seata
 
-  check-branch-compile:
-    name: check-branch-compile
+  check-branch-compile-license:
+    name: check-branch-compile-license
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
