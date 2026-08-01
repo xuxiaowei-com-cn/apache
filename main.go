@@ -279,10 +279,33 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 					})
 				}
 			}
+
+			if result.Licenses == nil && pom.Parent != nil {
+
+				coordTmp := pom.Parent.GroupId + ":" + pom.Parent.ArtifactId + ":pom:" + pom.Parent.Version + ":import"
+				mavenCoordinateTmp := parseCoordinateRecursion(coordTmp, localRepo)
+
+				if mavenCoordinateTmp.Licenses != nil {
+					result.Licenses = mavenCoordinateTmp.Licenses
+				}
+			}
 		}
 	}
 
 	return result
+}
+
+func parseCoordinateRecursion(coord, localRepo string) MavenCoordinate {
+	pom := parseCoordinate(coord, localRepo)
+	if pom.Licenses != nil {
+		return pom
+	}
+	if pom.Parent != nil {
+		coordTmp := pom.Parent.GroupId + ":" + pom.Parent.ArtifactId + ":pom:" + pom.Parent.Version + ":import"
+		return parseCoordinateRecursion(coordTmp, localRepo)
+	}
+
+	return pom
 }
 
 // isScope reports whether s looks like a Maven scope rather than a version.
