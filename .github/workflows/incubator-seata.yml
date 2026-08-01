@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - .github/workflows/incubator-seata.yml
+      - "*.go"
+      - go.sum
+      - go.mod
   workflow_dispatch:
     inputs:
       version:
