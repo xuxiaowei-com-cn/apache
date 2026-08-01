@@ -3,9 +3,12 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -32,9 +35,15 @@ func main() {
 				return fmt.Errorf("read %s: %w", file, err)
 			}
 
+			localRepo, err := mvnLocalRepo()
+			if err != nil {
+				return fmt.Errorf("get maven local repository: %w", err)
+			}
+
 			dependencies := parseDependencies(string(data))
 			for _, dep := range dependencies {
-				fmt.Println(dep)
+				mc := parseCoordinate(dep, localRepo)
+				fmt.Println(mc)
 			}
 			return nil
 		},
@@ -43,6 +52,157 @@ func main() {
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// pomLicenses holds the licenses section of a Maven POM for XML parsing.
+type pomLicenses struct {
+	XMLName  xml.Name     `xml:"project"`
+	Licenses []pomLicense `xml:"licenses>license"`
+}
+
+type pomLicense struct {
+	Name         string `xml:"name"`
+	Url          string `xml:"url"`
+	Distribution string `xml:"distribution"`
+	Comments     string `xml:"comments"`
+}
+
+// License holds the license information of a Maven artifact.
+type License struct {
+	Name         string
+	Url          string
+	Distribution string
+	Comments     string
+}
+
+// MavenCoordinate holds the parsed components of a Maven coordinate string
+// in the form "groupId:artifactId:type[:classifier]:version[:scope]".
+type MavenCoordinate struct {
+	GroupId    string
+	ArtifactId string
+	Type       string
+	Classifier string
+	Version    string
+	Scope      string
+	Licenses   []License
+}
+
+// RepoPath returns the relative path of this coordinate within a Maven
+// local repository (e.g. "com/example/my-lib/1.0.0/my-lib-1.0.0.jar").
+func (m MavenCoordinate) RepoPath() string {
+	groupPath := filepath.Join(strings.Split(m.GroupId, ".")...)
+	filename := m.ArtifactId + "-" + m.Version
+	if m.Classifier != "" {
+		filename += "-" + m.Classifier
+	}
+	if m.Type != "" && m.Type != "jar" {
+		filename += "." + m.Type
+	} else {
+		filename += ".jar"
+	}
+	return filepath.Join(groupPath, m.ArtifactId, m.Version, filename)
+}
+
+// PomPath returns the relative path of the POM for this coordinate
+// within a Maven local repository (e.g. "com/example/my-lib/1.0.0/my-lib-1.0.0.pom").
+func (m MavenCoordinate) PomPath() string {
+	groupPath := filepath.Join(strings.Split(m.GroupId, ".")...)
+	filename := m.ArtifactId + "-" + m.Version + ".pom"
+	return filepath.Join(groupPath, m.ArtifactId, m.Version, filename)
+}
+
+// mvnLocalRepo returns the Maven local repository path by running
+// mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout.
+func mvnLocalRepo() (string, error) {
+	out, err := exec.Command("mvn", "help:evaluate",
+		"-Dexpression=settings.localRepository",
+		"-q",
+		"-DforceStdout",
+	).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// parseCoordinate parses a Maven coordinate string and returns a MavenCoordinate.
+// The input format is "groupId:artifactId:type[:classifier]:version[:scope]".
+// localRepo is the path to the Maven local repository, used to read the POM for licenses.
+func parseCoordinate(coord, localRepo string) MavenCoordinate {
+	parts := strings.Split(coord, ":")
+	if len(parts) < 3 {
+		panic(coord)
+	}
+	partsLen := len(parts)
+	version := parts[partsLen-1]
+	// Check if the last segment looks like a scope rather than a version.
+	// Versions usually contain digits or dots; scopes are plain words.
+	if isScope(version) {
+		version = parts[partsLen-2]
+	}
+
+	result := MavenCoordinate{
+		Type:    parts[2],
+		Version: version,
+	}
+
+	// Assign groupId and artifactId
+	result.GroupId = parts[0]
+	result.ArtifactId = parts[1]
+
+	// Remaining parts between packaging and version are classifier
+	// And between version and end is scope
+	// Normalized layout: [0]=groupId [1]=artifactId [2]=type ... version ... scope?
+	versionIdx := indexOf(parts, version)
+
+	// Everything between type (idx 2) and version is classifier
+	if versionIdx > 3 {
+		result.Classifier = strings.Join(parts[3:versionIdx], "-")
+	}
+	// Everything after version is scope
+	if versionIdx < partsLen-1 {
+		result.Scope = parts[versionIdx+1]
+	}
+
+	// Update version position from version
+	result.Version = version
+
+	// Read licenses from POM file in local repository
+	pomPath := filepath.Join(localRepo, result.PomPath())
+	if data, err := os.ReadFile(pomPath); err == nil {
+		var pom pomLicenses
+		if xml.Unmarshal(data, &pom) == nil {
+			for _, l := range pom.Licenses {
+				result.Licenses = append(result.Licenses, License{
+					Name:         l.Name,
+					Url:          l.Url,
+					Distribution: l.Distribution,
+					Comments:     l.Comments,
+				})
+			}
+		}
+	}
+
+	return result
+}
+
+// isScope reports whether s looks like a Maven scope rather than a version.
+func isScope(s string) bool {
+	switch s {
+	case "compile", "runtime", "test", "system", "provided", "import":
+		return true
+	}
+	return false
+}
+
+// indexOf returns the first index of s in ss, or -1 if not found.
+func indexOf(ss []string, s string) int {
+	for i, v := range ss {
+		if v == s {
+			return i
+		}
+	}
+	return -1
 }
 
 // parseDependencies extracts dependency names from a tree-format file.
