@@ -21,27 +21,27 @@ func main() {
 	var excludeGroups []string
 
 	cmd := &cli.Command{
-		Name:  "dep-tree",
+		Name:  "license-check",
 		Usage: "parse a dependency tree file (e.g. gradle dependencies / mvn dependency:tree output) and check against a license file",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "file",
 				Aliases:     []string{"f"},
-				Usage:       "path to the dependency tree file",
+				Usage:       "path to the dependency tree output (e.g., gradle dependencies / mvn dependency:tree)",
 				Value:       "tree.txt",
 				Destination: &file,
 			},
 			&cli.StringFlag{
 				Name:        "license-file",
 				Aliases:     []string{"l"},
-				Usage:       "path to the LICENSE-namingserver file",
-				Value:       "LICENSE-namingserver",
+				Usage:       "path to the license whitelist file",
+				Value:       "LICENSE",
 				Destination: &licenseFile,
 			},
 			&cli.StringSliceFlag{
 				Name:        "exclude-group",
 				Aliases:     []string{"e"},
-				Usage:       "exclude dependencies matching this groupId (can be specified multiple times)",
+				Usage:       "exclude dependencies matching this Maven groupId (repeatable)",
 				Destination: &excludeGroups,
 			},
 		},
