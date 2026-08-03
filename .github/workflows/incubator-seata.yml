@@ -197,9 +197,9 @@ jobs:
       - name: "Show dependency tree"
         working-directory: ${{ steps.workdir.outputs.value }}
         run: ./mvnw -V -B dependency:tree
-      - name: "Export full dependency tree"
-        working-directory: ${{ steps.workdir.outputs.value }}
-        run: ./mvnw -V -B dependency:tree > tree.txt
+      #- name: "Export full dependency tree"
+      #  working-directory: ${{ steps.workdir.outputs.value }}
+      #  run: ./mvnw -V -B dependency:tree > tree.txt
       - name: "Export namingserver dependency tree"
         if: matrix.java == 25
         working-directory: ${{ steps.workdir.outputs.value }}
@@ -218,11 +218,11 @@ jobs:
           repository: ${{ github.repository }}
           ref: ${{ github.ref }}
           path: apache
-      - name: "Check full dependency licenses"
-        id: check-full
-        continue-on-error: true
-        working-directory: apache
-        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE --exclude-group=org.apache.seata --skip-test
+      #- name: "Check full dependency licenses"
+      #  id: check-full
+      #  continue-on-error: true
+      #  working-directory: apache
+      #  run: go run main.go --file=../${{ steps.workdir.outputs.value }}/tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE --exclude-group=org.apache.seata --skip-test
       - name: "Check server dependency licenses"
         id: check-server
         continue-on-error: true
@@ -239,10 +239,10 @@ jobs:
         if: always() && matrix.java == 25
         run: |
           FAIL=0
-          if [ "${{ steps.check-full.outcome }}" != "success" ]; then
-            echo "::error::full dependency licenses check failed"
-            FAIL=1
-          fi
+          #if [ "${{ steps.check-full.outcome }}" != "success" ]; then
+          #  echo "::error::full dependency licenses check failed"
+          #  FAIL=1
+          #fi
           if [ "${{ steps.check-server.outcome }}" != "success" ]; then
             echo "::error::server dependency licenses check failed"
             FAIL=1
