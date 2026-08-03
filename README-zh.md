@@ -63,18 +63,19 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 
 ### 参数
 
-| 参数              | 短名 | 默认值     | 说明                             |
-|-------------------|------|------------|----------------------------------|
-| `--file`          | `-f` | `tree.txt` | `mvn dependency:tree` 的输出文件 |
-| `--license-file`  | `-l` | `LICENSE`  | 许可证白名单文件路径             |
-| `--exclude-group` | `-e` | —          | 排除的 Maven groupId（可重复）   |
-| `--check-version` | `-v` | `true`     | 匹配时是否包含版本号             |
-| `--skip-test`     | `-t` | `false`    | 跳过 test scope 的依赖           |
+| 参数                 | 短名  | 默认值     | 说明                                      |
+|----------------------|-------|------------|-------------------------------------------|
+| `--file`             | `-f`  | `tree.txt` | `mvn dependency:tree` 的输出文件          |
+| `--license-file`     | `-lf` | `LICENSE`  | 许可证白名单文件路径                      |
+| `--exclude-group`    | `-eg` | —          | 排除的 Maven groupId（可重复）            |
+| `--exclude-artifact` | `-ea` | —          | 排除的 Maven groupId:artifactId（可重复） |
+| `--check-version`    | `-cv` | `true`     | 匹配时是否包含版本号                      |
+| `--skip-test`        | `-st` | `false`    | 跳过 test scope 的依赖                    |
 
 ### 流程
 
 1. 解析 `mvn dependency:tree` 输出中的依赖行（以 `+- ` 或 `\- ` 开头）
 2. 解析 Maven 坐标（groupId:artifactId:type:version:scope）
 3. 从本地 Maven 仓库读取对应 POM 文件，提取许可证信息（如 POM 未声明则递归查找父 POM）
-4. 去重、排除指定 groupId，在白名单文件中逐个子串匹配
+4. 去重、排除指定 groupId 和 groupId:artifactId，在白名单文件中逐个子串匹配
 5. 输出所有未命中依赖并返回错误

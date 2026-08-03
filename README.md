@@ -68,13 +68,14 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 
 ### Parameters
 
-| Parameter         | Short | Default    | Description                                                   |
-|-------------------|-------|------------|---------------------------------------------------------------|
-| `--file`          | `-f`  | `tree.txt` | Path to the `mvn dependency:tree` output file                 |
-| `--license-file`  | `-l`  | `LICENSE`  | Path to the license whitelist file                            |
-| `--exclude-group` | `-e`  | —          | Exclude dependencies matching this Maven groupId (repeatable) |
-| `--check-version` | `-v`  | `true`     | Include version in license key matching                       |
-| `--skip-test`     | `-t`  | `false`    | Skip dependencies with test scope                             |
+| Parameter            | Short | Default    | Description                                                              |
+|----------------------|-------|------------|--------------------------------------------------------------------------|
+| `--file`             | `-f`  | `tree.txt` | Path to the `mvn dependency:tree` output file                            |
+| `--license-file`     | `-lf` | `LICENSE`  | Path to the license whitelist file                                       |
+| `--exclude-group`    | `-eg` | —          | Exclude dependencies matching this Maven groupId (repeatable)            |
+| `--exclude-artifact` | `-ea` | —          | Exclude dependencies matching this Maven groupId:artifactId (repeatable) |
+| `--check-version`    | `-cv` | `true`     | Include version in license key matching                                  |
+| `--skip-test`        | `-st` | `false`    | Skip dependencies with test scope                                        |
 
 ### Flow
 
@@ -82,5 +83,5 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 2. Parse Maven coordinates (groupId:artifactId:type:version:scope)
 3. Read the corresponding POM file from the local Maven repository, extract license information (recursively look up
    parent POM if not declared)
-4. Deduplicate, exclude specified groupIds, and perform substring matching against the whitelist file
+4. Deduplicate, exclude specified groupIds and groupId:artifactIds, and perform substring matching against the whitelist file
 5. Output all unmatched dependencies and return an error

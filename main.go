@@ -21,6 +21,7 @@ func main() {
 	var file string
 	var licenseFile string
 	var excludeGroups []string
+	var excludeArtifacts []string
 	var checkVersion bool
 	var skipTest bool
 
@@ -37,27 +38,33 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        "license-file",
-				Aliases:     []string{"l"},
+				Aliases:     []string{"lf"},
 				Usage:       "path to the license whitelist file",
 				Value:       "LICENSE",
 				Destination: &licenseFile,
 			},
 			&cli.StringSliceFlag{
 				Name:        "exclude-group",
-				Aliases:     []string{"e"},
+				Aliases:     []string{"eg"},
 				Usage:       "exclude dependencies matching this Maven groupId (repeatable)",
 				Destination: &excludeGroups,
 			},
+			&cli.StringSliceFlag{
+				Name:        "exclude-artifact",
+				Aliases:     []string{"ea"},
+				Usage:       "exclude dependencies matching this Maven groupId:artifactId (repeatable)",
+				Destination: &excludeArtifacts,
+			},
 			&cli.BoolFlag{
 				Name:        "check-version",
-				Aliases:     []string{"v"},
+				Aliases:     []string{"cv"},
 				Usage:       "include version in license key matching (default: true)",
 				Value:       true,
 				Destination: &checkVersion,
 			},
 			&cli.BoolFlag{
 				Name:        "skip-test",
-				Aliases:     []string{"t"},
+				Aliases:     []string{"st"},
 				Usage:       "skip dependencies with test scope",
 				Value:       false,
 				Destination: &skipTest,
@@ -104,6 +111,11 @@ func main() {
 					continue
 				}
 
+				// Skip excluded groupId:artifactId
+				if isArtifactExcluded(mc.GroupId, mc.ArtifactId, excludeArtifacts) {
+					continue
+				}
+
 				// Skip test scope dependencies
 				if skipTest && strings.HasSuffix(dep, ":test") {
 					continue
@@ -136,6 +148,12 @@ func main() {
 // isExcluded reports whether groupId matches any entry in the exclude list.
 func isExcluded(groupId string, excludeGroups []string) bool {
 	return slices.Contains(excludeGroups, groupId)
+}
+
+// isArtifactExcluded reports whether the groupId:artifactId pair matches any entry in the exclude list.
+func isArtifactExcluded(groupId, artifactId string, excludeArtifacts []string) bool {
+	key := groupId + ":" + artifactId
+	return slices.Contains(excludeArtifacts, key)
 }
 
 // Pom holds the licenses section of a Maven POM for XML parsing.
