@@ -22,6 +22,7 @@ func main() {
 	var licenseFile string
 	var excludeGroups []string
 	var checkVersion bool
+	var skipTest bool
 
 	cmd := &cli.Command{
 		Name:  "license-check",
@@ -53,6 +54,13 @@ func main() {
 				Usage:       "include version in license key matching (default: true)",
 				Value:       true,
 				Destination: &checkVersion,
+			},
+			&cli.BoolFlag{
+				Name:        "skip-test",
+				Aliases:     []string{"t"},
+				Usage:       "skip dependencies with test scope",
+				Value:       false,
+				Destination: &skipTest,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -93,6 +101,11 @@ func main() {
 
 				// Skip excluded groupIds
 				if isExcluded(mc.GroupId, excludeGroups) {
+					continue
+				}
+
+				// Skip test scope dependencies
+				if skipTest && strings.HasSuffix(dep, ":test") {
 					continue
 				}
 

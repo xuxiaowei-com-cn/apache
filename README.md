@@ -74,6 +74,7 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 | `--license-file`  | `-l`  | `LICENSE`  | Path to the license whitelist file                            |
 | `--exclude-group` | `-e`  | —          | Exclude dependencies matching this Maven groupId (repeatable) |
 | `--check-version` | `-v`  | `true`     | Include version in license key matching                       |
+| `--skip-test`     | `-t`  | `false`    | Skip dependencies with test scope                             |
 
 ### Flow
 

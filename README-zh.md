@@ -69,6 +69,7 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 | `--license-file`  | `-l` | `LICENSE`  | 许可证白名单文件路径             |
 | `--exclude-group` | `-e` | —          | 排除的 Maven groupId（可重复）   |
 | `--check-version` | `-v` | `true`     | 匹配时是否包含版本号             |
+| `--skip-test`     | `-t` | `false`    | 跳过 test scope 的依赖           |
 
 ### 流程
 
