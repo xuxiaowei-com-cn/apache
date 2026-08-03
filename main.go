@@ -24,6 +24,7 @@ func main() {
 	var excludeArtifacts []string
 	var checkVersion bool
 	var skipTest bool
+	var pomBuild string
 
 	cmd := &cli.Command{
 		Name:  "license-check",
@@ -69,8 +70,52 @@ func main() {
 				Value:       false,
 				Destination: &skipTest,
 			},
+			&cli.StringFlag{
+				Name:        "pom-build",
+				Aliases:     []string{"pb"},
+				Usage:       "path to pom.xml to analyze its build section (plugins, executions, configuration)",
+				Destination: &pomBuild,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			pom, err := pomAnalysis(pomBuild)
+			if err != nil {
+				return fmt.Errorf("pomBuild Analysis %s: %w", pomBuild, err)
+			}
+
+			// maven-dependency-plugin
+			// excludeGroupIds
+
+			if pom != nil {
+				if pom.Build != nil && pom.Build.Plugins != nil {
+					for _, plugin := range pom.Build.Plugins {
+						// Match maven-dependency-plugin
+						if plugin.ArtifactId == "maven-dependency-plugin" && (plugin.GroupId == "org.apache.maven.plugins" || plugin.GroupId == "") {
+							// Extract excludeGroupIds from the plugin-level <configuration>
+							if v, ok := plugin.Configuration["excludeGroupIds"]; ok {
+								for g := range strings.SplitSeq(v, ",") {
+									g = strings.TrimSpace(g)
+									if g != "" && !slices.Contains(excludeGroups, g) {
+										excludeGroups = append(excludeGroups, g)
+									}
+								}
+							}
+							// Also check each <execution> for its own <configuration>
+							for _, e := range plugin.Executions {
+								if v, ok := e.Configuration["excludeGroupIds"]; ok {
+									for g := range strings.SplitSeq(v, ",") {
+										g = strings.TrimSpace(g)
+										if g != "" && !slices.Contains(excludeGroups, g) {
+											excludeGroups = append(excludeGroups, g)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			data, err := os.ReadFile(file)
 			if err != nil {
 				return fmt.Errorf("read %s: %w", file, err)
@@ -158,40 +203,76 @@ func isArtifactExcluded(groupId, artifactId string, excludeArtifacts []string) b
 
 // Pom holds the licenses section of a Maven POM for XML parsing.
 type Pom struct {
-	XMLName    xml.Name     `xml:"project"`
-	Parent     *PomParent   `xml:"parent"`
-	GroupId    string       `xml:"groupId"`
-	ArtifactId string       `xml:"artifactId"`
-	Version    string       `xml:"version"`
-	Licenses   []PomLicense `xml:"licenses>license"`
+	XMLName    xml.Name  `xml:"project"`
+	Parent     *Parent   `xml:"parent"`
+	GroupId    string    `xml:"groupId"`
+	ArtifactId string    `xml:"artifactId"`
+	Version    string    `xml:"version"`
+	Licenses   []License `xml:"licenses>license"`
+	Build      *Build    `xml:"build"`
 }
 
-type PomParent struct {
+type Parent struct {
 	GroupId    string `xml:"groupId"`
 	ArtifactId string `xml:"artifactId"`
 	Version    string `xml:"version"`
 }
 
-type PomLicense struct {
+type License struct {
 	Name         string `xml:"name"`
 	Url          string `xml:"url"`
 	Distribution string `xml:"distribution"`
 	Comments     string `xml:"comments"`
 }
 
-// License holds the license information of a Maven artifact.
-type License struct {
-	Name         string
-	Url          string
-	Distribution string
-	Comments     string
+type Build struct {
+	Plugins []Plugin `xml:"plugins>plugin"`
+}
+
+type Plugin struct {
+	GroupId       string        `xml:"groupId"`
+	ArtifactId    string        `xml:"artifactId"`
+	Configuration Configuration `xml:"configuration"`
+	Executions    []Execution   `xml:"executions>execution"`
+}
+
+// Configuration holds the child elements of a Maven plugin <configuration> element
+// as key-value pairs. Nested elements are not supported — their inner text is captured as the value.
+type Configuration map[string]string
+
+// UnmarshalXML decodes the child elements of <configuration> into key-value pairs.
+func (c *Configuration) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
+	*c = make(Configuration)
+	for {
+		tok, err := d.Token()
+		if err != nil {
+			return err
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			var value string
+			if err := d.DecodeElement(&value, &t); err != nil {
+				return err
+			}
+			(*c)[t.Name.Local] = value
+		case xml.EndElement:
+			return nil
+		}
+	}
+}
+
+type Execution struct {
+	Id            string        `xml:"id"`
+	Phase         string        `xml:"phase"`
+	Goals         []string      `xml:"goals>goal"`
+	Configuration Configuration `xml:"configuration"`
 }
 
 // MavenCoordinate holds the parsed components of a Maven coordinate string
 // in the form "groupId:artifactId:type[:classifier]:version[:scope]".
 type MavenCoordinate struct {
 	Text       string // original raw coordinate string (e.g. "org.springframework.boot:spring-boot-starter-security:jar:3.5.2:compile")
-	Parent     *PomParent
+	Parent     *Parent
 	GroupId    string
 	ArtifactId string
 	Type       string
@@ -300,7 +381,7 @@ func parseCoordinate(coord, localRepo string) MavenCoordinate {
 			}
 
 			if pom.Parent != nil {
-				result.Parent = &PomParent{
+				result.Parent = &Parent{
 					GroupId:    pom.Parent.GroupId,
 					ArtifactId: pom.Parent.ArtifactId,
 					Version:    pom.Parent.Version,
@@ -406,4 +487,25 @@ func parseDependencies(input string) []string {
 	}
 
 	return dependencies
+}
+
+// pomAnalysis reads a pom.xml file, parses its <build> section, and prints
+// plugins, their executions, goals, and configuration in a readable format.
+func pomAnalysis(pomPath string) (*Pom, error) {
+	if pomPath == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(pomPath)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", pomPath, err)
+	}
+
+	var pom Pom
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder.CharsetReader = charset.NewReaderLabel
+	if err := decoder.Decode(&pom); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", pomPath, err)
+	}
+
+	return &pom, nil
 }

@@ -63,7 +63,7 @@ dependency is declared in the LICENSE whitelist file.
 ### Usage
 
 ```shell
-go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache.seata
+go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache.seata --pom-build=pom.xml
 ```
 
 ### Parameters
@@ -76,6 +76,7 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 | `--exclude-artifact` | `-ea` | —          | Exclude dependencies matching this Maven groupId:artifactId (repeatable) |
 | `--check-version`    | `-cv` | `true`     | Include version in license key matching                                  |
 | `--skip-test`        | `-st` | `false`    | Skip dependencies with test scope                                        |
+| `--pom-build`        | `-pb` | —          | Path to pom.xml to analyze its build section for auto-exclusion rules    |
 
 ### Flow
 
@@ -83,5 +84,7 @@ go run main.go --file=tree.txt --license-file=LICENSE --exclude-group=org.apache
 2. Parse Maven coordinates (groupId:artifactId:type:version:scope)
 3. Read the corresponding POM file from the local Maven repository, extract license information (recursively look up
    parent POM if not declared)
-4. Deduplicate, exclude specified groupIds and groupId:artifactIds, and perform substring matching against the whitelist file
+4. Deduplicate, exclude specified groupIds and groupId:artifactIds, auto-exclude groupIds from
+   `maven-dependency-plugin` configuration in `--pom-build`, and perform substring matching against the
+   whitelist file
 5. Output all unmatched dependencies and return an error

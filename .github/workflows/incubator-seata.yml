@@ -228,13 +228,13 @@ jobs:
         continue-on-error: true
         working-directory: apache
         if: matrix.java == 25
-        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/server-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-server --exclude-group=org.apache.seata --skip-test
+        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/server-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-server --exclude-group=org.apache.seata --skip-test --pom-build=../${{ steps.workdir.outputs.value }}/server/pom.xml
       - name: "Check namingserver dependency licenses"
         id: check-namingserver
         continue-on-error: true
         working-directory: apache
         if: matrix.java == 25
-        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/namingserver-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-namingserver --exclude-group=org.apache.seata --skip-test
+        run: go run main.go --file=../${{ steps.workdir.outputs.value }}/namingserver-tree.txt --license-file=../${{ steps.workdir.outputs.value }}/distribution/LICENSE-namingserver --exclude-group=org.apache.seata --skip-test --pom-build=../${{ steps.workdir.outputs.value }}/namingserver/pom.xml
       - name: "Collect license check results"
         if: always() && matrix.java == 25
         run: |
